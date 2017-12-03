@@ -952,7 +952,7 @@ $hxClasses["ApplicationMain"] = ApplicationMain;
 ApplicationMain.__name__ = ["ApplicationMain"];
 ApplicationMain.main = function() {
 	var projectName = "LDKasse";
-	var config = { build : "500", company : "mightymarcus", file : "LDKasse", fps : 61, name : "LDKasse", orientation : "landscape", packageName : "LDKasse", version : "1.0.0", windows : [{ allowHighDPI : false, alwaysOnTop : false, antialiasing : 0, background : 52716, borderless : false, colorDepth : 16, depthBuffer : false, display : 0, fullscreen : true, hardware : true, height : 0, hidden : false, maximized : false, minimized : false, parameters : { }, resizable : true, stencilBuffer : true, title : "LDKasse", vsync : true, width : 0, x : null, y : null}]};
+	var config = { build : "501", company : "mightymarcus", file : "LDKasse", fps : 61, name : "LDKasse", orientation : "landscape", packageName : "LDKasse", version : "1.0.0", windows : [{ allowHighDPI : false, alwaysOnTop : false, antialiasing : 0, background : 52716, borderless : false, colorDepth : 16, depthBuffer : false, display : 0, fullscreen : true, hardware : true, height : 0, hidden : false, maximized : false, minimized : false, parameters : { }, resizable : true, stencilBuffer : true, title : "LDKasse", vsync : true, width : 0, x : null, y : null}]};
 	lime_system_System.__registerEntryPoint(projectName,ApplicationMain.create,config);
 };
 ApplicationMain.create = function(config) {
@@ -13270,7 +13270,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 771844;
+	this.version = 905475;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = ["lime","utils","AssetCache"];
@@ -36826,7 +36826,7 @@ KeyHandler.sequenceSuccess = false;
 KeyHandler.SEQ_KEY_PRESSED = false;
 KeyHandler._actualKeyIndex = 0;
 Product.sequences = [[37],[37,39],[38,38],[40,40],[40,38,38],[38,38,38],[38,40],[38,40,39],[39],[40],[38],[37,37],[39,37],[37,40],[38,40,38],[39,40,38]];
-Product.names = ["Bananas","Toilet Paper","Apple","Wine","Sugar","Meat","Chips","Melon","Soap","Lubbers","Noodles","Milk","Chocolate","Toothbrush","Blue Cancdle","Bad Plant"];
+Product.names = ["Bananas","Toilet Paper","Apple","Wine","Sugar","Meat","Chips","Melon","Soap","Lubbers","Noodles","Milk","Chocolate","Toothbrush","Blue Candle","Bad Plant"];
 haxe_Serializer.USE_CACHE = false;
 haxe_Serializer.USE_ENUM_INDEX = false;
 haxe_Serializer.BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789%:";
