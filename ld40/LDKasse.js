@@ -952,7 +952,7 @@ $hxClasses["ApplicationMain"] = ApplicationMain;
 ApplicationMain.__name__ = ["ApplicationMain"];
 ApplicationMain.main = function() {
 	var projectName = "LDKasse";
-	var config = { build : "505", company : "mightymarcus", file : "LDKasse", fps : 61, name : "LDKasse", orientation : "landscape", packageName : "LDKasse", version : "1.0.0", windows : [{ allowHighDPI : false, alwaysOnTop : false, antialiasing : 0, background : 52716, borderless : false, colorDepth : 16, depthBuffer : false, display : 0, fullscreen : true, hardware : true, height : 0, hidden : false, maximized : false, minimized : false, parameters : { }, resizable : true, stencilBuffer : true, title : "LDKasse", vsync : true, width : 0, x : null, y : null}]};
+	var config = { build : "506", company : "mightymarcus", file : "LDKasse", fps : 61, name : "LDKasse", orientation : "landscape", packageName : "LDKasse", version : "1.0.0", windows : [{ allowHighDPI : false, alwaysOnTop : false, antialiasing : 0, background : 52716, borderless : false, colorDepth : 16, depthBuffer : false, display : 0, fullscreen : true, hardware : true, height : 0, hidden : false, maximized : false, minimized : false, parameters : { }, resizable : true, stencilBuffer : true, title : "LDKasse", vsync : true, width : 0, x : null, y : null}]};
 	lime_system_System.__registerEntryPoint(projectName,ApplicationMain.create,config);
 };
 ApplicationMain.create = function(config) {
@@ -4412,7 +4412,7 @@ var SequencePanel = function() {
 	tf.align = 0;
 	this._textField.set_defaultTextFormat(tf);
 	this._textField.set_width(this.get_width());
-	this._textField.set_height(20);
+	this._textField.set_height(30);
 	this._textField.set_y(0);
 	this.addChild(this._textField);
 };
@@ -13270,7 +13270,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 305950;
+	this.version = 398932;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = ["lime","utils","AssetCache"];
