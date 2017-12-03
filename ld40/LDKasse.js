@@ -952,7 +952,7 @@ $hxClasses["ApplicationMain"] = ApplicationMain;
 ApplicationMain.__name__ = ["ApplicationMain"];
 ApplicationMain.main = function() {
 	var projectName = "LDKasse";
-	var config = { build : "449", company : "mightymarcus", file : "LDKasse", fps : 61, name : "LDKasse", orientation : "landscape", packageName : "LDKasse", version : "1.0.0", windows : [{ allowHighDPI : false, alwaysOnTop : false, antialiasing : 0, background : 52716, borderless : false, colorDepth : 16, depthBuffer : false, display : 0, fullscreen : true, hardware : true, height : 0, hidden : false, maximized : false, minimized : false, parameters : { }, resizable : true, stencilBuffer : true, title : "LDKasse", vsync : true, width : 0, x : null, y : null}]};
+	var config = { build : "500", company : "mightymarcus", file : "LDKasse", fps : 61, name : "LDKasse", orientation : "landscape", packageName : "LDKasse", version : "1.0.0", windows : [{ allowHighDPI : false, alwaysOnTop : false, antialiasing : 0, background : 52716, borderless : false, colorDepth : 16, depthBuffer : false, display : 0, fullscreen : true, hardware : true, height : 0, hidden : false, maximized : false, minimized : false, parameters : { }, resizable : true, stencilBuffer : true, title : "LDKasse", vsync : true, width : 0, x : null, y : null}]};
 	lime_system_System.__registerEntryPoint(projectName,ApplicationMain.create,config);
 };
 ApplicationMain.create = function(config) {
@@ -3090,8 +3090,9 @@ openfl_display_Sprite.prototype = $extend(openfl_display_DisplayObjectContainer.
 	,__class__: openfl_display_Sprite
 });
 var Main = function() {
+	this._checkFocusFrame = 0;
 	this.gameOver = false;
-	this._randomizer = 997;
+	this._randomizer = 996;
 	this._frame = -1;
 	openfl_display_Sprite.call(this);
 	SoundPlayer.init();
@@ -3108,6 +3109,7 @@ Main.prototype = $extend(openfl_display_Sprite.prototype,{
 	,_frame: null
 	,_randomizer: null
 	,gameOver: null
+	,_checkFocusFrame: null
 	,_resize: function(e) {
 		var canvaswidth = openfl_Lib.current.stage.stageWidth;
 		var canvasheight = openfl_Lib.current.stage.stageHeight;
@@ -3119,6 +3121,14 @@ Main.prototype = $extend(openfl_display_Sprite.prototype,{
 		this._checkout.resize();
 	}
 	,_gameLoop: function(e) {
+		this._checkFocusFrame++;
+		if(this._checkFocusFrame == 10) {
+			this._checkFocusFrame = 0;
+			openfl_Lib.current.stage.set_focus(openfl_Lib.current.stage);
+		}
+		if(this._checkout.notStarted) {
+			return;
+		}
 		if(this._checkout.restart) {
 			this.gameOver = false;
 			this._frame = -1;
@@ -3136,12 +3146,11 @@ Main.prototype = $extend(openfl_display_Sprite.prototype,{
 			return;
 		}
 		if(this._frame == 1000) {
-			haxe_Log.trace("schneller!",{ fileName : "Main.hx", lineNumber : 72, className : "Main", methodName : "_gameLoop"});
+			haxe_Log.trace("schneller!",{ fileName : "Main.hx", lineNumber : 84, className : "Main", methodName : "_gameLoop"});
 			this._frame = 0;
 			this._randomizer--;
-			haxe_Log.trace(this._randomizer,{ fileName : "Main.hx", lineNumber : 76, className : "Main", methodName : "_gameLoop"});
 			if(this._randomizer < 994) {
-				this._randomizer = 994;
+				this._randomizer = 996;
 			}
 		}
 		this._checkout.update();
@@ -3752,7 +3761,7 @@ openfl_display_Tile.prototype = {
 var Cashier = function() {
 	openfl_display_Tile.call(this,0);
 	this.set_x(393);
-	this.set_y(114);
+	this.set_y(110);
 	this.set_scaleX(this.set_scaleY(1.5));
 };
 $hxClasses["Cashier"] = Cashier;
@@ -3767,7 +3776,9 @@ Cashier.prototype = $extend(openfl_display_Tile.prototype,{
 var Checkout = function(canvas) {
 	this.restart = false;
 	this.gameOver = false;
+	this.notStarted = true;
 	this.earned = 0;
+	this._canvas = canvas;
 	var bgimg = openfl_utils_Assets.getBitmapData("img/checkout.png");
 	this._bmp = new openfl_display_Bitmap(bgimg);
 	canvas.addChild(this._bmp);
@@ -3784,19 +3795,30 @@ var Checkout = function(canvas) {
 	this.gameOverPanel = new GameOverPanel();
 	canvas.addChild(this.gameOverPanel);
 	this.gameOverPanel.addEventListener("click",$bind(this,this._restart));
+	this.startPanel = new StartPanel();
+	canvas.addChild(this.startPanel);
+	this.startPanel.addEventListener("click",$bind(this,this._start));
 };
 $hxClasses["Checkout"] = Checkout;
 Checkout.__name__ = ["Checkout"];
 Checkout.prototype = {
 	earned: null
+	,notStarted: null
+	,gameOver: null
+	,restart: null
 	,_bmp: null
 	,sheetCustomers: null
 	,sheetProducts: null
 	,sequencePanel: null
 	,gameOverPanel: null
 	,_cashier: null
-	,gameOver: null
-	,restart: null
+	,_canvas: null
+	,startPanel: null
+	,_start: function(e) {
+		this.notStarted = false;
+		this._canvas.removeChild(this.startPanel);
+		this.startPanel.set_visible(false);
+	}
 	,_restart: function(e) {
 		if(!this.gameOver) {
 			return;
@@ -3832,6 +3854,8 @@ Checkout.prototype = {
 		this.sequencePanel.set_y(92);
 		this.gameOverPanel.set_x(240. - this.gameOverPanel.get_width() / 2);
 		this.gameOverPanel.set_y(135. - this.gameOverPanel.get_height() / 2);
+		this.startPanel.set_x(240. - this.startPanel.get_width() / 2);
+		this.startPanel.set_y(135. - this.startPanel.get_height() / 2);
 	}
 	,showGameOver: function() {
 		this.gameOverPanel.set_visible(true);
@@ -3888,7 +3912,7 @@ Checkout.prototype = {
 			if(customer.products.length == 0) {
 				customer.angryMeter = 0;
 			}
-			if(customer.angryMeter == 2000) {
+			if(customer.angryMeter == 2700) {
 				this.gameOver = true;
 			}
 			if(customer.get_x() > 500) {
@@ -3917,7 +3941,7 @@ Checkout.prototype = {
 				this.sheetProducts.tilemapSequence.addTile(new openfl_display_Tile(nextProduct.get_id(),this.sequencePanel.get_width() / 2 - 8. - 6,6,1,1));
 				var arrowsW = (seq.length - 1) * 9. | 0;
 				var startX = (this.sequencePanel.get_width() / 2 - 8. | 0) - (arrowsW / 2 | 0);
-				var arrowID = 13;
+				var arrowID = 16;
 				var _g2 = 0;
 				var _g11 = Product.sequences[nextProduct.get_id()];
 				while(_g2 < _g11.length) {
@@ -3925,16 +3949,16 @@ Checkout.prototype = {
 					++_g2;
 					switch(key) {
 					case 37:
-						arrowID = 13;
+						arrowID = 16;
 						break;
 					case 38:
-						arrowID = 15;
+						arrowID = 18;
 						break;
 					case 39:
-						arrowID = 14;
+						arrowID = 17;
 						break;
 					case 40:
-						arrowID = 16;
+						arrowID = 19;
 						break;
 					default:
 					}
@@ -3977,7 +4001,7 @@ var Customer = function() {
 	this.set_scaleX(2);
 	this.set_scaleY(2);
 	this.set_x(-100);
-	this.set_y(130);
+	this.set_y(135);
 	this.head = new openfl_display_Tile(10 + this._addTiles + this._addTilesHead);
 	this.head.set_scaleX(this.head.set_scaleY(this.get_scaleX()));
 	this.head.set_x(this.get_x());
@@ -3996,7 +4020,8 @@ Customer.prototype = $extend(openfl_display_Tile.prototype,{
 	,_addTiles: null
 	,_addTilesHead: null
 	,_generateProducts: function() {
-		var lenproducts = Std.random(10) + 1;
+		var rand1 = Std.random(25) + 1;
+		var lenproducts = Std.random(rand1) + 1;
 		var _g1 = 0;
 		var _g = lenproducts;
 		while(_g1 < _g) {
@@ -4006,7 +4031,7 @@ Customer.prototype = $extend(openfl_display_Tile.prototype,{
 		}
 	}
 	,update: function(id) {
-		if(this.get_x() > -300) {
+		if(this.get_x() > -200) {
 			this.angryMeter++;
 		}
 		var prevCustomer = Customer.customers[id - 1];
@@ -4031,23 +4056,24 @@ Customer.prototype = $extend(openfl_display_Tile.prototype,{
 				var _g21 = this.products[i];
 				_g21.set_x(_g21.get_x() + 1);
 			}
-			if(this.get_id() == 2) {
+			if(this.get_id() + this._addTiles == 2 + this._addTiles) {
 				this._frames = 9;
 			}
 		}
 		this._frames++;
 		if(this._frames == 10) {
-			this._frames = 0;
-			var _g3 = this;
-			var _g11 = _g3.get_id();
-			_g3.set_id(_g11 + 1);
-			if(this.get_id() > 8 + this._addTiles) {
-				this.set_id(3 + this._addTiles);
+			if(blocked) {
+				this._frames = 9;
+				this.set_id(2 + this._addTiles);
+			} else {
+				this._frames = 0;
+				var _g3 = this;
+				var _g11 = _g3.get_id();
+				_g3.set_id(_g11 + 1);
+				if(this.get_id() > 8 + this._addTiles) {
+					this.set_id(3 + this._addTiles);
+				}
 			}
-		}
-		if(blocked) {
-			this._frames = 0;
-			this.set_id(2 + this._addTiles);
 		}
 		this.head.set_x(this.get_x());
 		this.head.set_y(this.get_id() == 4 + this._addTiles || this.get_id() == 7 + this._addTiles ? this.get_y() + 1 : this.get_y());
@@ -4060,10 +4086,10 @@ Customer.prototype = $extend(openfl_display_Tile.prototype,{
 		if(this.angryMeter == 1401) {
 			SoundPlayer.playSound(Std.random(2) == 1 ? "jammer1" : "jammer2");
 		}
-		if(this.angryMeter > 1600) {
+		if(this.angryMeter > 2000) {
 			this.head.set_id(13 + this._addTiles + this._addTilesHead);
 		}
-		if(this.angryMeter == 1601) {
+		if(this.angryMeter == 2001) {
 			SoundPlayer.playSound(Std.random(2) == 1 ? "jammer3" : "jammer4");
 		}
 	}
@@ -4300,7 +4326,7 @@ ManifestResources.init = function(config) {
 	var data;
 	var manifest;
 	var library;
-	data = "{\"name\":null,\"assets\":\"aoy4:pathy18:img%2Fcheckout.pngy4:sizei4559y4:typey5:IMAGEy2:idR1y7:preloadtgoR0y19:img%2Fcustomers.pngR2i7360R3R4R5R7R6tgoR0y18:img%2Fgameover.pngR2i2169R3R4R5R8R6tgoR0y18:img%2Fproducts.pngR2i1744R3R4R5R9R6tgoR0y21:img%2Fspritesheet.pngR2i324R3R4R5R10R6tgoR0y15:img%2Fthink.pngR2i488R3R4R5R11R6tgoR2i12176R3y5:SOUNDR5y14:sfx%2Fbeep.oggy9:pathGroupaR13hR6tgoR2i9630R3R12R5y17:sfx%2Fjammer1.oggR14aR15hR6tgoR2i9719R3R12R5y17:sfx%2Fjammer2.oggR14aR16hR6tgoR2i12721R3R12R5y17:sfx%2Fjammer3.oggR14aR17hR6tgoR2i11021R3R12R5y17:sfx%2Fjammer4.oggR14aR18hR6tgoR2i198493R3R12R5y15:sfx%2Fpiano.oggR14aR19hR6tgoR2i6658R3R12R5y17:sfx%2Fscanner.oggR14aR20hR6tgh\",\"version\":2,\"libraryArgs\":[],\"libraryType\":null}";
+	data = "{\"name\":null,\"assets\":\"aoy4:pathy18:img%2Fcheckout.pngy4:sizei4869y4:typey5:IMAGEy2:idR1y7:preloadtgoR0y19:img%2Fcustomers.pngR2i7637R3R4R5R7R6tgoR0y18:img%2Fgameover.pngR2i2169R3R4R5R8R6tgoR0y18:img%2Fproducts.pngR2i2044R3R4R5R9R6tgoR0y21:img%2Fspritesheet.pngR2i324R3R4R5R10R6tgoR0y15:img%2Fthink.pngR2i488R3R4R5R11R6tgoR2i7612R3y5:SOUNDR5y14:sfx%2Fbeep.oggy9:pathGroupaR13hR6tgoR2i9630R3R12R5y17:sfx%2Fjammer1.oggR14aR15hR6tgoR2i9719R3R12R5y17:sfx%2Fjammer2.oggR14aR16hR6tgoR2i12721R3R12R5y17:sfx%2Fjammer3.oggR14aR17hR6tgoR2i11021R3R12R5y17:sfx%2Fjammer4.oggR14aR18hR6tgoR2i198493R3R12R5y15:sfx%2Fpiano.oggR14aR19hR6tgoR2i6658R3R12R5y17:sfx%2Fscanner.oggR14aR20hR6tgh\",\"version\":2,\"libraryArgs\":[],\"libraryType\":null}";
 	manifest = lime_utils_AssetManifest.parse(data,rootPath);
 	library = lime_utils_AssetLibrary.fromManifest(manifest);
 	lime_utils_Assets.registerLibrary("default",library);
@@ -4314,7 +4340,7 @@ ManifestResources.init = function(config) {
 Math.__name__ = ["Math"];
 var Product = function() {
 	this.waitforscan = false;
-	var id = Std.random(13);
+	var id = Std.random(16);
 	openfl_display_Tile.call(this,id);
 	this.set_y(140 + Std.random(10));
 	this.set_scaleX(this.set_scaleY(1));
@@ -4537,6 +4563,9 @@ var SpriteSheetProducts = function() {
 	tileset.addRect(new openfl_geom_Rectangle(32,16,16,16));
 	tileset.addRect(new openfl_geom_Rectangle(48,16,16,16));
 	tileset.addRect(new openfl_geom_Rectangle(64,16,16,16));
+	tileset.addRect(new openfl_geom_Rectangle(80,16,16,16));
+	tileset.addRect(new openfl_geom_Rectangle(96,16,16,16));
+	tileset.addRect(new openfl_geom_Rectangle(112,16,16,16));
 	tileset.addRect(new openfl_geom_Rectangle(0,96,16,16));
 	tileset.addRect(new openfl_geom_Rectangle(16,96,16,16));
 	tileset.addRect(new openfl_geom_Rectangle(32,96,16,16));
@@ -4551,6 +4580,41 @@ SpriteSheetProducts.prototype = {
 	,tilemapSequence: null
 	,__class__: SpriteSheetProducts
 };
+var StartPanel = function() {
+	openfl_display_Sprite.call(this);
+	this.get_graphics().lineStyle(1,3342336);
+	this.get_graphics().beginFill(255,1);
+	this.get_graphics().drawRect(0,0,256,128);
+	this.get_graphics().endFill();
+	this.buttonMode = true;
+	this.mouseChildren = false;
+	this.set_visible(true);
+	this._textField = new openfl_text_TextField();
+	var tf = new openfl_text_TextFormat(null,10,16776960,true);
+	tf.align = 0;
+	this._textField.set_defaultTextFormat(tf);
+	this._textField.set_width(256);
+	this._textField.set_height(128);
+	this._textField.set_y(10);
+	this._textField.set_selectable(false);
+	this._textField.set_text("Welcome to SUPERMARKET BLUES!\n\n");
+	var _g = this._textField;
+	_g.set_text(lime_text__$UTF8String_UTF8String_$Impl_$.plus(_g.get_text(),"You are working at the supermarket to pay the bills.\n\n"));
+	var _g1 = this._textField;
+	_g1.set_text(lime_text__$UTF8String_UTF8String_$Impl_$.plus(_g1.get_text(),"How to play:\n\n"));
+	var _g2 = this._textField;
+	_g2.set_text(lime_text__$UTF8String_UTF8String_$Impl_$.plus(_g2.get_text(),"Look at the displayed arrow-key-sequence and enter it.\n\n"));
+	var _g3 = this._textField;
+	_g3.set_text(lime_text__$UTF8String_UTF8String_$Impl_$.plus(_g3.get_text(),"CLICK TO START WORKING!!!"));
+	this.addChild(this._textField);
+};
+$hxClasses["StartPanel"] = StartPanel;
+StartPanel.__name__ = ["StartPanel"];
+StartPanel.__super__ = openfl_display_Sprite;
+StartPanel.prototype = $extend(openfl_display_Sprite.prototype,{
+	_textField: null
+	,__class__: StartPanel
+});
 var Std = function() { };
 $hxClasses["Std"] = Std;
 Std.__name__ = ["Std"];
@@ -12748,11 +12812,29 @@ lime_text__$UTF8String_UTF8String_$Impl_$.substring = function(this1,startIndex,
 	}
 	return this1.substring(si,ei);
 };
+lime_text__$UTF8String_UTF8String_$Impl_$.toString = function(this1) {
+	return this1;
+};
 lime_text__$UTF8String_UTF8String_$Impl_$.equals = function(a,b) {
 	if(a == null || b == null) {
 		return a == b;
 	}
 	return lime_text_unifill_Unifill.uCompare(a,b) == 0;
+};
+lime_text__$UTF8String_UTF8String_$Impl_$.plus = function(a,b) {
+	if(a == null && b == null) {
+		return null;
+	}
+	if(a == null) {
+		return b;
+	}
+	if(b == null) {
+		return a;
+	}
+	var sb_b = "";
+	sb_b += Std.string(lime_text__$UTF8String_UTF8String_$Impl_$.toString(a));
+	sb_b += Std.string(lime_text__$UTF8String_UTF8String_$Impl_$.toString(b));
+	return sb_b;
 };
 lime_text__$UTF8String_UTF8String_$Impl_$.get_length = function(this1) {
 	if(this1 == null) {
@@ -13188,7 +13270,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 54320;
+	this.version = 771844;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = ["lime","utils","AssetCache"];
@@ -36743,8 +36825,8 @@ Customer.customers = [];
 KeyHandler.sequenceSuccess = false;
 KeyHandler.SEQ_KEY_PRESSED = false;
 KeyHandler._actualKeyIndex = 0;
-Product.sequences = [[37],[37,39],[38,38],[40,40],[40,38,38],[38,38,38],[38,40],[38,40,39],[39],[40],[38],[37,37],[39,37]];
-Product.names = ["Bananas","Toilet Paper","Apple","Wine","Sugar","Meat","Chips","Melon","Soap","Lubbers","Noodles","Milk","Chocolate"];
+Product.sequences = [[37],[37,39],[38,38],[40,40],[40,38,38],[38,38,38],[38,40],[38,40,39],[39],[40],[38],[37,37],[39,37],[37,40],[38,40,38],[39,40,38]];
+Product.names = ["Bananas","Toilet Paper","Apple","Wine","Sugar","Meat","Chips","Melon","Soap","Lubbers","Noodles","Milk","Chocolate","Toothbrush","Blue Cancdle","Bad Plant"];
 haxe_Serializer.USE_CACHE = false;
 haxe_Serializer.USE_ENUM_INDEX = false;
 haxe_Serializer.BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789%:";
