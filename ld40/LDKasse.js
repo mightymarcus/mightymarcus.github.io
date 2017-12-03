@@ -952,7 +952,7 @@ $hxClasses["ApplicationMain"] = ApplicationMain;
 ApplicationMain.__name__ = ["ApplicationMain"];
 ApplicationMain.main = function() {
 	var projectName = "LDKasse";
-	var config = { build : "501", company : "mightymarcus", file : "LDKasse", fps : 61, name : "LDKasse", orientation : "landscape", packageName : "LDKasse", version : "1.0.0", windows : [{ allowHighDPI : false, alwaysOnTop : false, antialiasing : 0, background : 52716, borderless : false, colorDepth : 16, depthBuffer : false, display : 0, fullscreen : true, hardware : true, height : 0, hidden : false, maximized : false, minimized : false, parameters : { }, resizable : true, stencilBuffer : true, title : "LDKasse", vsync : true, width : 0, x : null, y : null}]};
+	var config = { build : "505", company : "mightymarcus", file : "LDKasse", fps : 61, name : "LDKasse", orientation : "landscape", packageName : "LDKasse", version : "1.0.0", windows : [{ allowHighDPI : false, alwaysOnTop : false, antialiasing : 0, background : 52716, borderless : false, colorDepth : 16, depthBuffer : false, display : 0, fullscreen : true, hardware : true, height : 0, hidden : false, maximized : false, minimized : false, parameters : { }, resizable : true, stencilBuffer : true, title : "LDKasse", vsync : true, width : 0, x : null, y : null}]};
 	lime_system_System.__registerEntryPoint(projectName,ApplicationMain.create,config);
 };
 ApplicationMain.create = function(config) {
@@ -3095,6 +3095,7 @@ var Main = function() {
 	this._randomizer = 996;
 	this._frame = -1;
 	openfl_display_Sprite.call(this);
+	this.stage.scaleMode = 3;
 	SoundPlayer.init();
 	openfl_Lib.current.stage.addEventListener("resize",$bind(this,this._resize));
 	this._checkout = new Checkout(this);
@@ -3114,7 +3115,6 @@ Main.prototype = $extend(openfl_display_Sprite.prototype,{
 		var canvaswidth = openfl_Lib.current.stage.stageWidth;
 		var canvasheight = openfl_Lib.current.stage.stageHeight;
 		var ratioX = canvaswidth / 480;
-		var ratioY = canvasheight / 270;
 		this.set_scaleX(ratioX);
 		this.set_scaleY(ratioX);
 		this.set_y(canvasheight / 2 - this.get_height() / 2);
@@ -3146,7 +3146,7 @@ Main.prototype = $extend(openfl_display_Sprite.prototype,{
 			return;
 		}
 		if(this._frame == 1000) {
-			haxe_Log.trace("schneller!",{ fileName : "Main.hx", lineNumber : 84, className : "Main", methodName : "_gameLoop"});
+			haxe_Log.trace("schneller!",{ fileName : "Main.hx", lineNumber : 87, className : "Main", methodName : "_gameLoop"});
 			this._frame = 0;
 			this._randomizer--;
 			if(this._randomizer < 994) {
@@ -3912,7 +3912,7 @@ Checkout.prototype = {
 			if(customer.products.length == 0) {
 				customer.angryMeter = 0;
 			}
-			if(customer.angryMeter == 2700) {
+			if(customer.angryMeter == 2500) {
 				this.gameOver = true;
 			}
 			if(customer.get_x() > 500) {
@@ -13270,7 +13270,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 905475;
+	this.version = 305950;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = ["lime","utils","AssetCache"];
