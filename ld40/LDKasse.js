@@ -952,7 +952,7 @@ $hxClasses["ApplicationMain"] = ApplicationMain;
 ApplicationMain.__name__ = ["ApplicationMain"];
 ApplicationMain.main = function() {
 	var projectName = "LDKasse";
-	var config = { build : "242", company : "mightymarcus", file : "LDKasse", fps : 61, name : "LDKasse", orientation : "landscape", packageName : "LDKasse", version : "1.0.0", windows : [{ allowHighDPI : false, alwaysOnTop : false, antialiasing : 0, background : 52716, borderless : false, colorDepth : 16, depthBuffer : false, display : 0, fullscreen : true, hardware : true, height : 0, hidden : false, maximized : false, minimized : false, parameters : { }, resizable : true, stencilBuffer : true, title : "LDKasse", vsync : true, width : 0, x : null, y : null}]};
+	var config = { build : "449", company : "mightymarcus", file : "LDKasse", fps : 61, name : "LDKasse", orientation : "landscape", packageName : "LDKasse", version : "1.0.0", windows : [{ allowHighDPI : false, alwaysOnTop : false, antialiasing : 0, background : 52716, borderless : false, colorDepth : 16, depthBuffer : false, display : 0, fullscreen : true, hardware : true, height : 0, hidden : false, maximized : false, minimized : false, parameters : { }, resizable : true, stencilBuffer : true, title : "LDKasse", vsync : true, width : 0, x : null, y : null}]};
 	lime_system_System.__registerEntryPoint(projectName,ApplicationMain.create,config);
 };
 ApplicationMain.create = function(config) {
@@ -3090,9 +3090,11 @@ openfl_display_Sprite.prototype = $extend(openfl_display_DisplayObjectContainer.
 	,__class__: openfl_display_Sprite
 });
 var Main = function() {
-	this._randomizer = 998;
+	this.gameOver = false;
+	this._randomizer = 997;
 	this._frame = -1;
 	openfl_display_Sprite.call(this);
+	SoundPlayer.init();
 	openfl_Lib.current.stage.addEventListener("resize",$bind(this,this._resize));
 	this._checkout = new Checkout(this);
 	KeyHandler.init();
@@ -3105,6 +3107,7 @@ Main.prototype = $extend(openfl_display_Sprite.prototype,{
 	_checkout: null
 	,_frame: null
 	,_randomizer: null
+	,gameOver: null
 	,_resize: function(e) {
 		var canvaswidth = openfl_Lib.current.stage.stageWidth;
 		var canvasheight = openfl_Lib.current.stage.stageHeight;
@@ -3116,15 +3119,27 @@ Main.prototype = $extend(openfl_display_Sprite.prototype,{
 		this._checkout.resize();
 	}
 	,_gameLoop: function(e) {
-		if(this._checkout.gameOver) {
-			console.log("game over!");
+		if(this._checkout.restart) {
+			this.gameOver = false;
+			this._frame = -1;
+			this._randomizer = 997;
+			this._checkout.gameOver = false;
+			this._checkout.restart = false;
+			this._checkout.earned = 0;
+		}
+		if(this.gameOver) {
 			return;
 		}
-		if(this._frame == 800) {
-			console.log("schneller!");
+		if(this._checkout.gameOver) {
+			this.gameOver = true;
+			this._checkout.showGameOver();
+			return;
+		}
+		if(this._frame == 1000) {
+			haxe_Log.trace("schneller!",{ fileName : "Main.hx", lineNumber : 72, className : "Main", methodName : "_gameLoop"});
 			this._frame = 0;
 			this._randomizer--;
-			console.log(this._randomizer);
+			haxe_Log.trace(this._randomizer,{ fileName : "Main.hx", lineNumber : 76, className : "Main", methodName : "_gameLoop"});
 			if(this._randomizer < 994) {
 				this._randomizer = 994;
 			}
@@ -3718,6 +3733,9 @@ openfl_display_Tile.prototype = {
 		}
 		return this.__matrix.tx = value;
 	}
+	,get_y: function() {
+		return this.__matrix.ty;
+	}
 	,set_y: function(value) {
 		this.__transformDirty = true;
 		if(this.parent != null) {
@@ -3747,7 +3765,9 @@ Cashier.prototype = $extend(openfl_display_Tile.prototype,{
 	,__class__: Cashier
 });
 var Checkout = function(canvas) {
+	this.restart = false;
 	this.gameOver = false;
+	this.earned = 0;
 	var bgimg = openfl_utils_Assets.getBitmapData("img/checkout.png");
 	this._bmp = new openfl_display_Bitmap(bgimg);
 	canvas.addChild(this._bmp);
@@ -3759,21 +3779,75 @@ var Checkout = function(canvas) {
 	canvas.addChild(this.sheetProducts.tilemap);
 	canvas.addChild(this.sheetCustomers.tilemap);
 	this.sequencePanel = new SequencePanel();
-	openfl_Lib.current.stage.addChild(this.sequencePanel);
+	canvas.addChild(this.sequencePanel);
 	this.sequencePanel.addChild(this.sheetProducts.tilemapSequence);
+	this.gameOverPanel = new GameOverPanel();
+	canvas.addChild(this.gameOverPanel);
+	this.gameOverPanel.addEventListener("click",$bind(this,this._restart));
 };
 $hxClasses["Checkout"] = Checkout;
 Checkout.__name__ = ["Checkout"];
 Checkout.prototype = {
-	_bmp: null
+	earned: null
+	,_bmp: null
 	,sheetCustomers: null
 	,sheetProducts: null
 	,sequencePanel: null
+	,gameOverPanel: null
 	,_cashier: null
 	,gameOver: null
+	,restart: null
+	,_restart: function(e) {
+		if(!this.gameOver) {
+			return;
+		}
+		this.removeGameOver();
+		var _g1 = 0;
+		var _g = Customer.customers.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			this.sheetCustomers.tilemap.removeTiles(0,this.sheetCustomers.tilemap.numTiles);
+			this.sheetProducts.tilemap.removeTiles(0,this.sheetProducts.tilemap.numTiles);
+			this.sheetProducts.tilemapSequence.removeTiles(0,this.sheetProducts.tilemapSequence.numTiles);
+			var products = Customer.customers[i].products;
+			if(products != null) {
+				var _g3 = 0;
+				var _g2 = products.length;
+				while(_g3 < _g2) {
+					var j = _g3++;
+					products[j] = null;
+				}
+			}
+			Customer.customers[i].products = null;
+			Customer.customers[i] = null;
+		}
+		Customer.customers = [];
+		this.gameOver = false;
+		this.restart = true;
+		this.sequencePanel.updateText("");
+		KeyHandler.clearSequence();
+	}
 	,resize: function() {
-		this.sequencePanel.set_x(openfl_Lib.current.stage.get_width() / 2 - this.sequencePanel.get_width() / 2);
-		this.sequencePanel.set_y(60);
+		this.sequencePanel.set_x(348);
+		this.sequencePanel.set_y(92);
+		this.gameOverPanel.set_x(240. - this.gameOverPanel.get_width() / 2);
+		this.gameOverPanel.set_y(135. - this.gameOverPanel.get_height() / 2);
+	}
+	,showGameOver: function() {
+		this.gameOverPanel.set_visible(true);
+		SoundPlayer.playSound("piano");
+		var euros = "" + this.earned / 10;
+		var ary = euros.split(".");
+		var euro = ary[0];
+		var cent = ary[1] != null ? ary[1] : "";
+		var text = "You have earned " + euro + " Euros";
+		if(cent != "") {
+			text += " and " + cent + " Cents";
+		}
+		this.gameOverPanel.setText(text + " ...");
+	}
+	,removeGameOver: function() {
+		this.gameOverPanel.set_visible(false);
 	}
 	,addCustomer: function() {
 		var customer = new Customer();
@@ -3784,6 +3858,7 @@ Checkout.prototype = {
 			}
 		}
 		this.sheetCustomers.tilemap.addTile(customer);
+		this.sheetCustomers.tilemap.addTile(customer.head);
 		Customer.customers.push(customer);
 		var _g1 = 0;
 		var _g = customer.products.length;
@@ -3792,7 +3867,7 @@ Checkout.prototype = {
 			this.sheetProducts.tilemap.addTile(customer.products[i]);
 			customer.products[i].set_x(customer.get_x());
 			var _g2 = customer;
-			_g2.set_x(_g2.get_x() - (5 + Std.random(5)));
+			_g2.set_x(_g2.get_x() - 12);
 		}
 		var _g3 = customer;
 		_g3.set_x(_g3.get_x() - 30);
@@ -3803,31 +3878,46 @@ Checkout.prototype = {
 		} else {
 			this._cashier.changeAnim(0);
 		}
+		var removeCustomer = false;
 		var _g1 = 0;
 		var _g = Customer.customers.length;
 		while(_g1 < _g) {
 			var i = _g1++;
 			var customer = Customer.customers[i];
 			customer.update(i);
-			if(customer.angryMeter == 1500) {
+			if(customer.products.length == 0) {
+				customer.angryMeter = 0;
+			}
+			if(customer.angryMeter == 2000) {
 				this.gameOver = true;
 			}
+			if(customer.get_x() > 500) {
+				removeCustomer = true;
+				customer.gone = true;
+			}
 		}
-		var nextCustomer = Customer.customers[0];
-		if(nextCustomer == null) {
+		var nextCostumer = null;
+		if(Customer.customers[0] != null && Customer.customers[0].products != null && Customer.customers[0].products.length > 0) {
+			nextCostumer = Customer.customers[0];
+		} else if(Customer.customers.length > 1) {
+			nextCostumer = Customer.customers[1];
+		} else {
+			nextCostumer = null;
+		}
+		if(nextCostumer == null) {
 			return;
 		}
-		var nextProduct = nextCustomer.products[0];
-		if(nextProduct.waitforscan) {
+		var nextProduct = nextCostumer.products[0];
+		if(nextProduct != null && nextProduct.waitforscan) {
 			if(KeyHandler.sequence == null) {
 				var seq = Product.sequences[nextProduct.get_id()];
 				KeyHandler.feedSequence(seq);
 				this.sequencePanel.set_visible(true);
 				this.sequencePanel.updateText(Product.names[nextProduct.get_id()]);
-				this.sheetProducts.tilemapSequence.addTile(new openfl_display_Tile(nextProduct.get_id(),this.sequencePanel.get_width() / 2 - 64.,45,8,8));
-				var arrowsW = seq.length * 18 | 0;
-				var startX = (this.sequencePanel.get_width() / 2 - 72. | 0) - (arrowsW / 2 | 0);
-				var arrowID = 2;
+				this.sheetProducts.tilemapSequence.addTile(new openfl_display_Tile(nextProduct.get_id(),this.sequencePanel.get_width() / 2 - 8. - 6,6,1,1));
+				var arrowsW = (seq.length - 1) * 9. | 0;
+				var startX = (this.sequencePanel.get_width() / 2 - 8. | 0) - (arrowsW / 2 | 0);
+				var arrowID = 13;
 				var _g2 = 0;
 				var _g11 = Product.sequences[nextProduct.get_id()];
 				while(_g2 < _g11.length) {
@@ -3835,46 +3925,63 @@ Checkout.prototype = {
 					++_g2;
 					switch(key) {
 					case 37:
-						arrowID = 4;
+						arrowID = 13;
 						break;
 					case 38:
-						arrowID = 6;
+						arrowID = 15;
 						break;
 					case 39:
-						arrowID = 5;
+						arrowID = 14;
 						break;
 					case 40:
-						arrowID = 7;
+						arrowID = 16;
 						break;
 					default:
 					}
-					this.sheetProducts.tilemapSequence.addTile(new openfl_display_Tile(arrowID,startX,100,8,8));
-					startX += 65;
+					this.sheetProducts.tilemapSequence.addTile(new openfl_display_Tile(arrowID,startX - 6,20,1,1));
+					startX += 9;
 				}
 			} else if(KeyHandler.sequenceSuccess) {
+				SoundPlayer.playSound("scanner");
+				this.earned++;
 				this.sequencePanel.set_visible(false);
 				this.sheetProducts.tilemapSequence.removeTiles(0,this.sheetProducts.tilemapSequence.numTiles);
 				KeyHandler.clearSequence();
-				var remTile = nextCustomer.products.shift();
+				var remTile = nextCostumer.products.shift();
+				if(nextCostumer.products.length == 0) {
+					SoundPlayer.playSound("beep");
+				}
 				this.sheetProducts.tilemap.removeTile(remTile);
 				remTile = null;
-				if(nextCustomer.products.length == 0) {
-					var remCustomer = Customer.customers.shift();
-					this.sheetCustomers.tilemap.removeTile(remCustomer);
-					remCustomer = null;
-				}
 			}
+		}
+		if(removeCustomer) {
+			var remCustomer = Customer.customers.shift();
+			this.sheetCustomers.tilemap.removeTile(remCustomer.head);
+			this.sheetCustomers.tilemap.removeTile(remCustomer);
+			remCustomer = null;
 		}
 	}
 	,__class__: Checkout
 };
 var Customer = function() {
+	this._addTilesHead = 0;
+	this._addTiles = 0;
+	this._frames = 0;
+	this.head = null;
+	this.gone = false;
 	this.angryMeter = 0;
 	this.products = [];
-	openfl_display_Tile.call(this,2);
-	this.set_scaleX(this.set_scaleY(4));
+	this._addTiles = Std.random(2) == 1 ? 0 : 16;
+	openfl_display_Tile.call(this,2 + this._addTiles);
+	this.set_scaleX(2);
+	this.set_scaleY(2);
 	this.set_x(-100);
-	this.set_y(140);
+	this.set_y(130);
+	this.head = new openfl_display_Tile(10 + this._addTiles + this._addTilesHead);
+	this.head.set_scaleX(this.head.set_scaleY(this.get_scaleX()));
+	this.head.set_x(this.get_x());
+	this.head.set_y(this.get_y());
 	this._generateProducts();
 };
 $hxClasses["Customer"] = Customer;
@@ -3883,6 +3990,11 @@ Customer.__super__ = openfl_display_Tile;
 Customer.prototype = $extend(openfl_display_Tile.prototype,{
 	products: null
 	,angryMeter: null
+	,gone: null
+	,head: null
+	,_frames: null
+	,_addTiles: null
+	,_addTilesHead: null
 	,_generateProducts: function() {
 		var lenproducts = Std.random(10) + 1;
 		var _g1 = 0;
@@ -3894,16 +4006,18 @@ Customer.prototype = $extend(openfl_display_Tile.prototype,{
 		}
 	}
 	,update: function(id) {
-		this.angryMeter++;
+		if(this.get_x() > -300) {
+			this.angryMeter++;
+		}
 		var prevCustomer = Customer.customers[id - 1];
 		var blocked = false;
-		if(this.products[0].get_x() > 420) {
+		if(this.products.length > 0 && this.products[0] != null && this.products[0].get_x() > 400) {
 			blocked = true;
 			var tmp = !this.products[0].waitforscan;
 			this.products[0].waitforscan = true;
 		}
 		if(prevCustomer != null) {
-			if(this.products[0].get_x() >= prevCustomer.get_x() - 5) {
+			if(this.products[0] != null && this.products[0].get_x() >= prevCustomer.get_x() - 5) {
 				blocked = true;
 			}
 		}
@@ -3917,6 +4031,40 @@ Customer.prototype = $extend(openfl_display_Tile.prototype,{
 				var _g21 = this.products[i];
 				_g21.set_x(_g21.get_x() + 1);
 			}
+			if(this.get_id() == 2) {
+				this._frames = 9;
+			}
+		}
+		this._frames++;
+		if(this._frames == 10) {
+			this._frames = 0;
+			var _g3 = this;
+			var _g11 = _g3.get_id();
+			_g3.set_id(_g11 + 1);
+			if(this.get_id() > 8 + this._addTiles) {
+				this.set_id(3 + this._addTiles);
+			}
+		}
+		if(blocked) {
+			this._frames = 0;
+			this.set_id(2 + this._addTiles);
+		}
+		this.head.set_x(this.get_x());
+		this.head.set_y(this.get_id() == 4 + this._addTiles || this.get_id() == 7 + this._addTiles ? this.get_y() + 1 : this.get_y());
+		if(this.angryMeter > 800) {
+			this.head.set_id(11 + this._addTiles + this._addTilesHead);
+		}
+		if(this.angryMeter > 1400) {
+			this.head.set_id(12 + this._addTiles + this._addTilesHead);
+		}
+		if(this.angryMeter == 1401) {
+			SoundPlayer.playSound(Std.random(2) == 1 ? "jammer1" : "jammer2");
+		}
+		if(this.angryMeter > 1600) {
+			this.head.set_id(13 + this._addTiles + this._addTilesHead);
+		}
+		if(this.angryMeter == 1601) {
+			SoundPlayer.playSound(Std.random(2) == 1 ? "jammer3" : "jammer4");
 		}
 	}
 	,__class__: Customer
@@ -3978,6 +4126,36 @@ EReg.prototype = {
 	}
 	,__class__: EReg
 };
+var GameOverPanel = function() {
+	openfl_display_Sprite.call(this);
+	this.get_graphics().lineStyle(1,16711680);
+	this.get_graphics().beginFill(255,.4);
+	this.get_graphics().drawRect(0,0,128,128);
+	this.get_graphics().endFill();
+	var bd = openfl_utils_Assets.getBitmapData("img/gameover.png");
+	this.get_graphics().beginBitmapFill(bd,null,false,false);
+	this.get_graphics().drawRect(0,0,128,128);
+	this.get_graphics().endFill();
+	this.set_visible(false);
+	this._textField = new openfl_text_TextField();
+	var tf = new openfl_text_TextFormat(null,6,16711680,true);
+	tf.align = 0;
+	this._textField.set_defaultTextFormat(tf);
+	this._textField.set_width(this.get_width());
+	this._textField.set_height(60);
+	this._textField.set_y(0);
+	this.addChild(this._textField);
+};
+$hxClasses["GameOverPanel"] = GameOverPanel;
+GameOverPanel.__name__ = ["GameOverPanel"];
+GameOverPanel.__super__ = openfl_display_Sprite;
+GameOverPanel.prototype = $extend(openfl_display_Sprite.prototype,{
+	_textField: null
+	,setText: function(text) {
+		this._textField.set_text(text);
+	}
+	,__class__: GameOverPanel
+});
 var HxOverrides = function() { };
 $hxClasses["HxOverrides"] = HxOverrides;
 HxOverrides.__name__ = ["HxOverrides"];
@@ -4049,6 +4227,7 @@ KeyHandler.feedSequence = function(ary) {
 	KeyHandler.sequence = ary;
 };
 KeyHandler.clearSequence = function() {
+	KeyHandler.SEQ_KEY_PRESSED = false;
 	KeyHandler.sequence = null;
 	KeyHandler._actualKeyIndex = 0;
 	KeyHandler.sequenceSuccess = false;
@@ -4121,7 +4300,7 @@ ManifestResources.init = function(config) {
 	var data;
 	var manifest;
 	var library;
-	data = "{\"name\":null,\"assets\":\"aoy4:pathy18:img%2Fcheckout.pngy4:sizei2493y4:typey5:IMAGEy2:idR1y7:preloadtgoR0y19:img%2Fcustomers.pngR2i825R3R4R5R7R6tgoR0y18:img%2Fproducts.pngR2i641R3R4R5R8R6tgoR0y21:img%2Fspritesheet.pngR2i324R3R4R5R9R6tgh\",\"version\":2,\"libraryArgs\":[],\"libraryType\":null}";
+	data = "{\"name\":null,\"assets\":\"aoy4:pathy18:img%2Fcheckout.pngy4:sizei4559y4:typey5:IMAGEy2:idR1y7:preloadtgoR0y19:img%2Fcustomers.pngR2i7360R3R4R5R7R6tgoR0y18:img%2Fgameover.pngR2i2169R3R4R5R8R6tgoR0y18:img%2Fproducts.pngR2i1744R3R4R5R9R6tgoR0y21:img%2Fspritesheet.pngR2i324R3R4R5R10R6tgoR0y15:img%2Fthink.pngR2i488R3R4R5R11R6tgoR2i12176R3y5:SOUNDR5y14:sfx%2Fbeep.oggy9:pathGroupaR13hR6tgoR2i9630R3R12R5y17:sfx%2Fjammer1.oggR14aR15hR6tgoR2i9719R3R12R5y17:sfx%2Fjammer2.oggR14aR16hR6tgoR2i12721R3R12R5y17:sfx%2Fjammer3.oggR14aR17hR6tgoR2i11021R3R12R5y17:sfx%2Fjammer4.oggR14aR18hR6tgoR2i198493R3R12R5y15:sfx%2Fpiano.oggR14aR19hR6tgoR2i6658R3R12R5y17:sfx%2Fscanner.oggR14aR20hR6tgh\",\"version\":2,\"libraryArgs\":[],\"libraryType\":null}";
 	manifest = lime_utils_AssetManifest.parse(data,rootPath);
 	library = lime_utils_AssetLibrary.fromManifest(manifest);
 	lime_utils_Assets.registerLibrary("default",library);
@@ -4135,9 +4314,9 @@ ManifestResources.init = function(config) {
 Math.__name__ = ["Math"];
 var Product = function() {
 	this.waitforscan = false;
-	var id = Std.random(4);
+	var id = Std.random(13);
 	openfl_display_Tile.call(this,id);
-	this.set_y(145 + Std.random(10));
+	this.set_y(140 + Std.random(10));
 	this.set_scaleX(this.set_scaleY(1));
 };
 $hxClasses["Product"] = Product;
@@ -4199,17 +4378,16 @@ Reflect.deleteField = function(o,field) {
 };
 var SequencePanel = function() {
 	openfl_display_Sprite.call(this);
-	this.get_graphics().lineStyle(1,0);
-	this.get_graphics().beginFill(255);
-	this.get_graphics().drawRect(0,0,512,256);
+	this.get_graphics().drawRect(0,0,40,40);
 	this.get_graphics().endFill();
 	this.set_visible(false);
 	this._textField = new openfl_text_TextField();
-	var tf = new openfl_text_TextFormat(null,60,16776960,true);
+	var tf = new openfl_text_TextFormat(null,6,16776960,true);
 	tf.align = 0;
 	this._textField.set_defaultTextFormat(tf);
 	this._textField.set_width(this.get_width());
-	this._textField.set_height(60);
+	this._textField.set_height(20);
+	this._textField.set_y(0);
 	this.addChild(this._textField);
 };
 $hxClasses["SequencePanel"] = SequencePanel;
@@ -4222,12 +4400,117 @@ SequencePanel.prototype = $extend(openfl_display_Sprite.prototype,{
 	}
 	,__class__: SequencePanel
 });
+var SoundPlayer = function() { };
+$hxClasses["SoundPlayer"] = SoundPlayer;
+SoundPlayer.__name__ = ["SoundPlayer"];
+SoundPlayer.init = function() {
+	SoundPlayer.sfx = new haxe_ds_StringMap();
+	var this1 = SoundPlayer.sfx;
+	var value = openfl_utils_Assets.getSound("sfx/beep.ogg");
+	var _this = this1;
+	if(__map_reserved["beep"] != null) {
+		_this.setReserved("beep",value);
+	} else {
+		_this.h["beep"] = value;
+	}
+	var this2 = SoundPlayer.sfx;
+	var value1 = openfl_utils_Assets.getSound("sfx/scanner.ogg");
+	var _this1 = this2;
+	if(__map_reserved["scanner"] != null) {
+		_this1.setReserved("scanner",value1);
+	} else {
+		_this1.h["scanner"] = value1;
+	}
+	var this3 = SoundPlayer.sfx;
+	var value2 = openfl_utils_Assets.getSound("sfx/piano.ogg");
+	var _this2 = this3;
+	if(__map_reserved["piano"] != null) {
+		_this2.setReserved("piano",value2);
+	} else {
+		_this2.h["piano"] = value2;
+	}
+	var this4 = SoundPlayer.sfx;
+	var value3 = openfl_utils_Assets.getSound("sfx/jammer1.ogg");
+	var _this3 = this4;
+	if(__map_reserved["jammer1"] != null) {
+		_this3.setReserved("jammer1",value3);
+	} else {
+		_this3.h["jammer1"] = value3;
+	}
+	var this5 = SoundPlayer.sfx;
+	var value4 = openfl_utils_Assets.getSound("sfx/jammer2.ogg");
+	var _this4 = this5;
+	if(__map_reserved["jammer2"] != null) {
+		_this4.setReserved("jammer2",value4);
+	} else {
+		_this4.h["jammer2"] = value4;
+	}
+	var this6 = SoundPlayer.sfx;
+	var value5 = openfl_utils_Assets.getSound("sfx/jammer3.ogg");
+	var _this5 = this6;
+	if(__map_reserved["jammer3"] != null) {
+		_this5.setReserved("jammer3",value5);
+	} else {
+		_this5.h["jammer3"] = value5;
+	}
+	var this7 = SoundPlayer.sfx;
+	var value6 = openfl_utils_Assets.getSound("sfx/jammer4.ogg");
+	var _this6 = this7;
+	if(__map_reserved["jammer4"] != null) {
+		_this6.setReserved("jammer4",value6);
+	} else {
+		_this6.h["jammer4"] = value6;
+	}
+};
+SoundPlayer.playSound = function(id,loop) {
+	if(loop == null) {
+		loop = false;
+	}
+	var _this = SoundPlayer.sfx;
+	if(__map_reserved[id] != null ? _this.existsReserved(id) : _this.h.hasOwnProperty(id)) {
+		var _this1 = SoundPlayer.sfx;
+		(__map_reserved[id] != null ? _this1.getReserved(id) : _this1.h[id]).play(0,loop ? 1000000 : 1);
+	} else {
+		haxe_Log.trace("no sound!",{ fileName : "SoundPlayer.hx", lineNumber : 33, className : "SoundPlayer", methodName : "playSound", customParams : [id]});
+	}
+};
 var SpriteSheetCustomers = function() {
 	var bmp = openfl_utils_Assets.getBitmapData("img/customers.png");
 	var tileset = new openfl_display_Tileset(bmp);
-	tileset.addRect(new openfl_geom_Rectangle(0,16,32,32));
-	tileset.addRect(new openfl_geom_Rectangle(32,16,32,32));
-	tileset.addRect(new openfl_geom_Rectangle(0,0,16,16));
+	tileset.addRect(new openfl_geom_Rectangle(0,96,32,32));
+	tileset.addRect(new openfl_geom_Rectangle(32,96,32,32));
+	tileset.addRect(new openfl_geom_Rectangle(0,0,32,32));
+	tileset.addRect(new openfl_geom_Rectangle(32,0,32,32));
+	tileset.addRect(new openfl_geom_Rectangle(64,0,32,32));
+	tileset.addRect(new openfl_geom_Rectangle(96,0,32,32));
+	tileset.addRect(new openfl_geom_Rectangle(0,32,32,32));
+	tileset.addRect(new openfl_geom_Rectangle(32,32,32,32));
+	tileset.addRect(new openfl_geom_Rectangle(64,32,32,32));
+	tileset.addRect(new openfl_geom_Rectangle(96,32,32,32));
+	tileset.addRect(new openfl_geom_Rectangle(0,64,24,16));
+	tileset.addRect(new openfl_geom_Rectangle(32,64,24,16));
+	tileset.addRect(new openfl_geom_Rectangle(64,64,24,16));
+	tileset.addRect(new openfl_geom_Rectangle(96,64,24,16));
+	tileset.addRect(new openfl_geom_Rectangle(0,80,24,16));
+	tileset.addRect(new openfl_geom_Rectangle(32,80,24,16));
+	tileset.addRect(new openfl_geom_Rectangle(64,80,24,16));
+	tileset.addRect(new openfl_geom_Rectangle(96,80,24,16));
+	tileset.addRect(new openfl_geom_Rectangle(128,0,32,32));
+	tileset.addRect(new openfl_geom_Rectangle(160,0,32,32));
+	tileset.addRect(new openfl_geom_Rectangle(192,0,32,32));
+	tileset.addRect(new openfl_geom_Rectangle(224,0,32,32));
+	tileset.addRect(new openfl_geom_Rectangle(128,32,32,32));
+	tileset.addRect(new openfl_geom_Rectangle(160,32,32,32));
+	tileset.addRect(new openfl_geom_Rectangle(192,32,32,32));
+	tileset.addRect(new openfl_geom_Rectangle(224,32,32,32));
+	tileset.addRect(new openfl_geom_Rectangle(128,64,24,16));
+	tileset.addRect(new openfl_geom_Rectangle(160,64,24,16));
+	tileset.addRect(new openfl_geom_Rectangle(192,64,24,16));
+	tileset.addRect(new openfl_geom_Rectangle(224,64,24,16));
+	tileset.addRect(new openfl_geom_Rectangle(128,64,40,16));
+	tileset.addRect(new openfl_geom_Rectangle(160,80,24,16));
+	tileset.addRect(new openfl_geom_Rectangle(192,80,24,16));
+	tileset.addRect(new openfl_geom_Rectangle(224,80,24,16));
 	this.tilemap = new openfl_display_Tilemap(480,270,tileset,false);
 	this.tilemapCashier = new openfl_display_Tilemap(480,270,tileset,false);
 };
@@ -4245,12 +4528,21 @@ var SpriteSheetProducts = function() {
 	tileset.addRect(new openfl_geom_Rectangle(16,0,16,16));
 	tileset.addRect(new openfl_geom_Rectangle(32,0,16,16));
 	tileset.addRect(new openfl_geom_Rectangle(48,0,16,16));
+	tileset.addRect(new openfl_geom_Rectangle(64,0,16,16));
+	tileset.addRect(new openfl_geom_Rectangle(80,0,16,16));
+	tileset.addRect(new openfl_geom_Rectangle(96,0,16,16));
+	tileset.addRect(new openfl_geom_Rectangle(112,0,16,16));
 	tileset.addRect(new openfl_geom_Rectangle(0,16,16,16));
 	tileset.addRect(new openfl_geom_Rectangle(16,16,16,16));
 	tileset.addRect(new openfl_geom_Rectangle(32,16,16,16));
 	tileset.addRect(new openfl_geom_Rectangle(48,16,16,16));
+	tileset.addRect(new openfl_geom_Rectangle(64,16,16,16));
+	tileset.addRect(new openfl_geom_Rectangle(0,96,16,16));
+	tileset.addRect(new openfl_geom_Rectangle(16,96,16,16));
+	tileset.addRect(new openfl_geom_Rectangle(32,96,16,16));
+	tileset.addRect(new openfl_geom_Rectangle(48,96,16,16));
 	this.tilemap = new openfl_display_Tilemap(480,270,tileset,false);
-	this.tilemapSequence = new openfl_display_Tilemap(512,256,tileset,false);
+	this.tilemapSequence = new openfl_display_Tilemap(50,50,tileset,false);
 };
 $hxClasses["SpriteSheetProducts"] = SpriteSheetProducts;
 SpriteSheetProducts.__name__ = ["SpriteSheetProducts"];
@@ -4668,6 +4960,12 @@ haxe__$Int64__$_$_$Int64.prototype = {
 	high: null
 	,low: null
 	,__class__: haxe__$Int64__$_$_$Int64
+};
+var haxe_Log = function() { };
+$hxClasses["haxe.Log"] = haxe_Log;
+haxe_Log.__name__ = ["haxe","Log"];
+haxe_Log.trace = function(v,infos) {
+	js_Boot.__trace(v,infos);
 };
 var haxe_Serializer = function() {
 	this.buf = new StringBuf();
@@ -5894,6 +6192,35 @@ js__$Boot_HaxeError.prototype = $extend(Error.prototype,{
 var js_Boot = function() { };
 $hxClasses["js.Boot"] = js_Boot;
 js_Boot.__name__ = ["js","Boot"];
+js_Boot.__unhtml = function(s) {
+	return s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
+};
+js_Boot.__trace = function(v,i) {
+	var msg = i != null ? i.fileName + ":" + i.lineNumber + ": " : "";
+	msg += js_Boot.__string_rec(v,"");
+	if(i != null && i.customParams != null) {
+		var _g = 0;
+		var _g1 = i.customParams;
+		while(_g < _g1.length) {
+			var v1 = _g1[_g];
+			++_g;
+			msg += "," + js_Boot.__string_rec(v1,"");
+		}
+	}
+	var d;
+	var tmp;
+	if(typeof(document) != "undefined") {
+		d = document.getElementById("haxe:trace");
+		tmp = d != null;
+	} else {
+		tmp = false;
+	}
+	if(tmp) {
+		d.innerHTML += js_Boot.__unhtml(msg) + "<br/>";
+	} else if(typeof console != "undefined" && console.log != null) {
+		console.log(msg);
+	}
+};
 js_Boot.getClass = function(o) {
 	if((o instanceof Array) && o.__enum__ == null) {
 		return Array;
@@ -6450,7 +6777,12 @@ lime__$backend_html5_GameDeviceData.prototype = {
 	,axes: null
 	,__class__: lime__$backend_html5_GameDeviceData
 };
-var lime__$backend_html5_HTML5AudioSource = function() { };
+var lime__$backend_html5_HTML5AudioSource = function(parent) {
+	this.parent = parent;
+	this.id = -1;
+	this.gain = 1;
+	this.position = new lime_math_Vector4();
+};
 $hxClasses["lime._backend.html5.HTML5AudioSource"] = lime__$backend_html5_HTML5AudioSource;
 lime__$backend_html5_HTML5AudioSource.__name__ = ["lime","_backend","html5","HTML5AudioSource"];
 lime__$backend_html5_HTML5AudioSource.prototype = {
@@ -6463,6 +6795,8 @@ lime__$backend_html5_HTML5AudioSource.prototype = {
 	,playing: null
 	,position: null
 	,dispose: function() {
+	}
+	,init: function() {
 	}
 	,play: function() {
 		if(this.playing || this.parent.buffer == null) {
@@ -6540,6 +6874,12 @@ lime__$backend_html5_HTML5AudioSource.prototype = {
 			return this.parent.buffer.__srcHowl.duration() * 1000 | 0;
 		}
 		return 0;
+	}
+	,setLength: function(value) {
+		return this.length = value;
+	}
+	,setLoops: function(value) {
+		return this.loops = value;
 	}
 	,getPosition: function() {
 		return this.position;
@@ -11536,7 +11876,24 @@ lime_math_Vector2.prototype = {
 	}
 	,__class__: lime_math_Vector2
 };
-var lime_math_Vector4 = function() { };
+var lime_math_Vector4 = function(x,y,z,w) {
+	if(w == null) {
+		w = 0.;
+	}
+	if(z == null) {
+		z = 0.;
+	}
+	if(y == null) {
+		y = 0.;
+	}
+	if(x == null) {
+		x = 0.;
+	}
+	this.w = w;
+	this.x = x;
+	this.y = y;
+	this.z = z;
+};
 $hxClasses["lime.math.Vector4"] = lime_math_Vector4;
 lime_math_Vector4.__name__ = ["lime","math","Vector4"];
 lime_math_Vector4.prototype = {
@@ -11681,8 +12038,24 @@ lime_media_AudioManager.init = function(context) {
 		}
 	}
 };
-var lime_media_AudioSource = function() {
+var lime_media_AudioSource = function(buffer,offset,length,loops) {
+	if(loops == null) {
+		loops = 0;
+	}
+	if(offset == null) {
+		offset = 0;
+	}
 	this.onComplete = new lime_app__$Event_$Void_$Void();
+	this.buffer = buffer;
+	this.offset = offset;
+	this.backend = new lime__$backend_html5_HTML5AudioSource(this);
+	if(length != null && length != 0) {
+		this.set_length(length);
+	}
+	this.set_loops(loops);
+	if(buffer != null) {
+		this.init();
+	}
 };
 $hxClasses["lime.media.AudioSource"] = lime_media_AudioSource;
 lime_media_AudioSource.__name__ = ["lime","media","AudioSource"];
@@ -11693,6 +12066,9 @@ lime_media_AudioSource.prototype = {
 	,backend: null
 	,dispose: function() {
 		this.backend.dispose();
+	}
+	,init: function() {
+		this.backend.init();
 	}
 	,play: function() {
 		this.backend.play();
@@ -11711,6 +12087,12 @@ lime_media_AudioSource.prototype = {
 	}
 	,set_gain: function(value) {
 		return this.backend.setGain(value);
+	}
+	,set_length: function(value) {
+		return this.backend.setLength(value);
+	}
+	,set_loops: function(value) {
+		return this.backend.setLoops(value);
 	}
 	,get_position: function() {
 		return this.backend.getPosition();
@@ -12806,7 +13188,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 383515;
+	this.version = 54320;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = ["lime","utils","AssetCache"];
@@ -13791,6 +14173,12 @@ lime_utils_Assets.getAsset = function(id,type,useCache) {
 		lime_utils_Log.error(lime_utils_Assets.__libraryNotFound(symbol_libraryName),{ fileName : "Assets.hx", lineNumber : 172, className : "lime.utils.Assets", methodName : "getAsset"});
 	}
 	return null;
+};
+lime_utils_Assets.getAudioBuffer = function(id,useCache) {
+	if(useCache == null) {
+		useCache = true;
+	}
+	return lime_utils_Assets.getAsset(id,"SOUND",useCache);
 };
 lime_utils_Assets.getBytes = function(id) {
 	return lime_utils_Assets.getAsset(id,"BINARY",false);
@@ -14843,11 +15231,11 @@ openfl_display_MovieClip.prototype = $extend(openfl_display_Sprite.prototype,{
 							} catch( e ) {
 								haxe_CallStack.lastException = e;
 								if (e instanceof js__$Boot_HaxeError) e = e.val;
-								console.log("Error evaluating frame script\n " + Std.string(e) + "\n" + haxe_CallStack.exceptionStack().map((function() {
+								haxe_Log.trace("Error evaluating frame script\n " + Std.string(e) + "\n" + haxe_CallStack.exceptionStack().map((function() {
 									return function(a) {
 										return a[2];
 									};
-								})()).join("\n") + "\n" + Std.string(e.stack) + "\n" + script1[0].toString());
+								})()).join("\n") + "\n" + Std.string(e.stack) + "\n" + script1[0].toString(),{ fileName : "MovieClip.hx", lineNumber : 488, className : "openfl.display.MovieClip", methodName : "__fromSymbol"});
 							}
 						};
 					})(script);
@@ -33277,12 +33665,100 @@ openfl_geom_Vector3D.prototype = {
 var openfl_media_ID3Info = function() { };
 $hxClasses["openfl.media.ID3Info"] = openfl_media_ID3Info;
 openfl_media_ID3Info.__name__ = ["openfl","media","ID3Info"];
-var openfl_media_Sound = function() { };
+var openfl_media_Sound = function(stream,context) {
+	openfl_events_EventDispatcher.call(this,this);
+	this.bytesLoaded = 0;
+	this.bytesTotal = 0;
+	this.isBuffering = false;
+	this.url = null;
+	if(stream != null) {
+		this.load(stream,context);
+	}
+};
 $hxClasses["openfl.media.Sound"] = openfl_media_Sound;
 openfl_media_Sound.__name__ = ["openfl","media","Sound"];
+openfl_media_Sound.fromAudioBuffer = function(buffer) {
+	var sound = new openfl_media_Sound();
+	sound.__buffer = buffer;
+	return sound;
+};
 openfl_media_Sound.__super__ = openfl_events_EventDispatcher;
 openfl_media_Sound.prototype = $extend(openfl_events_EventDispatcher.prototype,{
-	__class__: openfl_media_Sound
+	bytesLoaded: null
+	,bytesTotal: null
+	,isBuffering: null
+	,url: null
+	,__buffer: null
+	,load: function(stream,context) {
+		var _gthis = this;
+		this.url = stream.url;
+		var defaultLibrary = lime_utils_Assets.getLibrary("default");
+		var tmp;
+		if(defaultLibrary != null) {
+			var key = this.url;
+			var _this = defaultLibrary.cachedAudioBuffers;
+			if(__map_reserved[key] != null) {
+				tmp = _this.existsReserved(key);
+			} else {
+				tmp = _this.h.hasOwnProperty(key);
+			}
+		} else {
+			tmp = false;
+		}
+		if(tmp) {
+			var key1 = this.url;
+			var _this1 = defaultLibrary.cachedAudioBuffers;
+			this.AudioBuffer_onURLLoad(__map_reserved[key1] != null ? _this1.getReserved(key1) : _this1.h[key1]);
+		} else {
+			lime_media_AudioBuffer.loadFromFile(this.url).onComplete($bind(this,this.AudioBuffer_onURLLoad)).onError(function(_) {
+				_gthis.AudioBuffer_onURLLoad(null);
+			});
+		}
+	}
+	,play: function(startTime,loops,sndTransform) {
+		if(loops == null) {
+			loops = 0;
+		}
+		if(startTime == null) {
+			startTime = 0.0;
+		}
+		if(openfl_media_SoundMixer.__soundChannels.length >= 32) {
+			return null;
+		}
+		if(sndTransform == null) {
+			sndTransform = new openfl_media_SoundTransform();
+		} else {
+			sndTransform = sndTransform.clone();
+		}
+		var pan = openfl_media_SoundMixer.__soundTransform.pan + sndTransform.pan;
+		if(pan > 1) {
+			pan = 1;
+		}
+		if(pan < -1) {
+			pan = -1;
+		}
+		var volume = openfl_media_SoundMixer.__soundTransform.volume * sndTransform.volume;
+		var source = new lime_media_AudioSource(this.__buffer);
+		source.offset = startTime | 0;
+		if(loops > 1) {
+			source.set_loops(loops - 1);
+		}
+		source.set_gain(volume);
+		var position = source.get_position();
+		position.x = pan;
+		position.z = -1 * Math.sqrt(1 - Math.pow(pan,2));
+		source.set_position(position);
+		return new openfl_media_SoundChannel(source,sndTransform);
+	}
+	,AudioBuffer_onURLLoad: function(buffer) {
+		if(buffer == null) {
+			this.dispatchEvent(new openfl_events_IOErrorEvent("ioError"));
+		} else {
+			this.__buffer = buffer;
+			this.dispatchEvent(new openfl_events_Event("complete"));
+		}
+	}
+	,__class__: openfl_media_Sound
 });
 var openfl_media_SoundChannel = function(source,soundTransform) {
 	openfl_events_EventDispatcher.call(this,this);
@@ -33375,6 +33851,9 @@ openfl_media_SoundChannel.prototype = $extend(openfl_events_EventDispatcher.prot
 	}
 	,__class__: openfl_media_SoundChannel
 });
+var openfl_media_SoundLoaderContext = function() { };
+$hxClasses["openfl.media.SoundLoaderContext"] = openfl_media_SoundLoaderContext;
+openfl_media_SoundLoaderContext.__name__ = ["openfl","media","SoundLoaderContext"];
 var openfl_media_SoundTransform = function(vol,panning) {
 	if(panning == null) {
 		panning = 0;
@@ -35949,9 +36428,12 @@ openfl_utils_IAssetCache.__name__ = ["openfl","utils","IAssetCache"];
 openfl_utils_IAssetCache.prototype = {
 	get_enabled: null
 	,getBitmapData: null
+	,getSound: null
 	,hasBitmapData: null
+	,hasSound: null
 	,removeBitmapData: null
 	,setBitmapData: null
+	,setSound: null
 	,__class__: openfl_utils_IAssetCache
 };
 var openfl_utils_AssetCache = function() {
@@ -35976,8 +36458,24 @@ openfl_utils_AssetCache.prototype = {
 			return _this.h[id];
 		}
 	}
+	,getSound: function(id) {
+		var _this = this.sound;
+		if(__map_reserved[id] != null) {
+			return _this.getReserved(id);
+		} else {
+			return _this.h[id];
+		}
+	}
 	,hasBitmapData: function(id) {
 		var _this = this.bitmapData;
+		if(__map_reserved[id] != null) {
+			return _this.existsReserved(id);
+		} else {
+			return _this.h.hasOwnProperty(id);
+		}
+	}
+	,hasSound: function(id) {
+		var _this = this.sound;
 		if(__map_reserved[id] != null) {
 			return _this.existsReserved(id);
 		} else {
@@ -35994,6 +36492,14 @@ openfl_utils_AssetCache.prototype = {
 			_this.setReserved(id,bitmapData);
 		} else {
 			_this.h[id] = bitmapData;
+		}
+	}
+	,setSound: function(id,sound) {
+		var _this = this.sound;
+		if(__map_reserved[id] != null) {
+			_this.setReserved(id,sound);
+		} else {
+			_this.h[id] = sound;
 		}
 	}
 	,get_enabled: function() {
@@ -36027,8 +36533,31 @@ openfl_utils_Assets.getBitmapData = function(id,useCache) {
 	}
 	return null;
 };
+openfl_utils_Assets.getSound = function(id,useCache) {
+	if(useCache == null) {
+		useCache = true;
+	}
+	if(useCache && openfl_utils_Assets.cache.get_enabled() && openfl_utils_Assets.cache.hasSound(id)) {
+		var sound = openfl_utils_Assets.cache.getSound(id);
+		if(openfl_utils_Assets.isValidSound(sound)) {
+			return sound;
+		}
+	}
+	var buffer = lime_utils_Assets.getAudioBuffer(id,false);
+	if(buffer != null) {
+		var sound1 = openfl_media_Sound.fromAudioBuffer(buffer);
+		if(useCache && openfl_utils_Assets.cache.get_enabled()) {
+			openfl_utils_Assets.cache.setSound(id,sound1);
+		}
+		return sound1;
+	}
+	return null;
+};
 openfl_utils_Assets.isValidBitmapData = function(bitmapData) {
 	return bitmapData != null && bitmapData.image != null;
+};
+openfl_utils_Assets.isValidSound = function(sound) {
+	return true;
 };
 var openfl_utils__$ByteArray_ByteArray_$Impl_$ = {};
 $hxClasses["openfl.utils._ByteArray.ByteArray_Impl_"] = openfl_utils__$ByteArray_ByteArray_$Impl_$;
@@ -36214,8 +36743,8 @@ Customer.customers = [];
 KeyHandler.sequenceSuccess = false;
 KeyHandler.SEQ_KEY_PRESSED = false;
 KeyHandler._actualKeyIndex = 0;
-Product.sequences = [[37],[37,39],[38,38],[40,40]];
-Product.names = ["Bananas","Toilet Paper","Apple","Wine"];
+Product.sequences = [[37],[37,39],[38,38],[40,40],[40,38,38],[38,38,38],[38,40],[38,40,39],[39],[40],[38],[37,37],[39,37]];
+Product.names = ["Bananas","Toilet Paper","Apple","Wine","Sugar","Meat","Chips","Melon","Soap","Lubbers","Noodles","Milk","Chocolate"];
 haxe_Serializer.USE_CACHE = false;
 haxe_Serializer.USE_ENUM_INDEX = false;
 haxe_Serializer.BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789%:";
